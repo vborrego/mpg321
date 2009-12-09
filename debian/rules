@@ -18,12 +18,12 @@ configure: configure-stamp
 configure-stamp:
 	dh_testdir
 	# Add here commands to configure the package.
-	
+
 	CFLAGS="$(CFLAGS)" ./configure --prefix=/usr --mandir=/usr/share/man --disable-mpg123-symlink
 	touch configure-stamp
 
-build: configure-stamp build-stamp
-build-stamp:
+build: build-stamp
+build-stamp: configure-stamp
 	dh_testdir
 
 	# Add here commands to compile the package.
@@ -60,7 +60,7 @@ binary-arch: build install
 	dh_testroot
 	dh_installdocs
 	dh_installmanpages
-	dh_installchangelogs 
+	dh_installchangelogs
 	dh_link
 	dh_strip
 	dh_compress
