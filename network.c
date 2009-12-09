@@ -167,16 +167,19 @@ int raw_open(char *arg)
  * @param tcp_sock the socket use to read the stream
  * @param buf a buffer to receive the data
  * @param size size of the buffer
- * @return the size of the stream read or -1 if an error occured
+ * @return the size of the stream read or -1 if an error occured or 0 on EOF
  */
 static int http_read_line(int tcp_sock, char *buf, int size)
 {
     int offset = 0;
+    int bytes_read;
 
     do
     {
-        if (read(tcp_sock, buf + offset, 1) < 0)
+        if ((bytes_read = read(tcp_sock, buf + offset, 1)) < 0)
             return -1;
+        if (bytes_read == 0)
+            return 0;
         if (buf[offset] != '\r')    /* Strip \r from answer */
             offset++;
     }
@@ -203,9 +206,16 @@ int http_open(char *arg)
     /* Parse URL */
     port = 80;
     host = arg + strlen("http://");
-    if ((request = strchr(host, '/')) == NULL)
-        return (0);
-    *request++ = 0;
+    if (request = strchr(host, '/'))
+    {
+        *request++ = 0;
+        snprintf(filename, sizeof(filename) - strlen(host) - 75, "/%s", request);
+    } 
+    else 
+    {
+        sprintf(filename, "/");
+        request = filename;
+    }
 
     if (strchr(host, ':') != NULL)  /* port is specified */
     {
