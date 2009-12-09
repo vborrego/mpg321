@@ -44,6 +44,8 @@
 
 #include <limits.h>
 
+int icy_metaint = 0;
+
 int is_address_multicast(unsigned long address)
 {
     if ((address & 255) >= 224 && (address & 255) <= 239)
@@ -235,9 +237,14 @@ int http_open(char *arg)
     /* Send HTTP GET request */
     /* Please don't use a Agent know by shoutcast (Lynx, Mozilla) seems to be reconized and print
      * a html page and not the stream */
-    snprintf(http_request, sizeof(http_request), "GET /%s HTTP/1.0\r\n"
-/*  "User-Agent: Mozilla/2.0 (Win95; I)\r\n" */
-             "Pragma: no-cache\r\n" "Host: %s\r\n" "Accept: */*\r\n" "\r\n", filename, host);
+    snprintf(http_request, sizeof(http_request),
+    "GET /%s HTTP/1.0\r\n"
+    "Pragma: no-cache\r\n"
+    "Host: %s\r\n"
+    "User-Agent: xmms/1.2.7\r\n" /* to make ShoutCast happy */
+    "%s" /* to get metadata on ShoutCast stream */
+    "Accept: */*\r\n"
+    "\r\n", filename, host, (options.opt & MPG321_REMOTE_PLAY) ? "Icy-MetaData:1\r\n" : "");
 
     send(tcp_sock, http_request, strlen(http_request), 0);
 
@@ -284,7 +291,7 @@ int http_open(char *arg)
             return http_open(&http_request[10]);
         }
 
-        if (strncmp(http_request, "ICY ", 4) == 0)
+        else if (strncmp(http_request, "ICY ", 4) == 0)
         {
             /* This is icecast streaming */
             if (strncmp(http_request + 4, "200 ", 4))
@@ -293,11 +300,11 @@ int http_open(char *arg)
                 return 0;
             }
         }
-        else if (strncmp(http_request, "icy-", 4) == 0)
+        else if ((options.opt & MPG321_REMOTE_PLAY) && (strncmp(http_request, "icy-metaint:", 12) == 0))
         {
-            /* we can have: icy-noticeX, icy-name, icy-genre, icy-url, icy-pub, icy-metaint, icy-br */
-            /* Don't print these - mpg123 doesn't */
-            /*    fprintf(stderr,"%s\n",http_request); */
+            icy_metaint = atoi(http_request + 12);
+            icy_buf_read = 0;
+            icy_tag_crossed_boundary = 0;
         }
     }
     while (strcmp(http_request, "\n") != 0);

@@ -109,6 +109,9 @@ extern char *playlist_file;
 extern int quit_now;
 extern char remote_input_buf[PATH_MAX + 5];
 extern int file_change;
+extern int icy_metaint;
+extern unsigned long int icy_buf_read;
+extern int icy_tag_crossed_boundary;
 
 extern int status;
 

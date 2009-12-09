@@ -42,6 +42,13 @@
 #include <fcntl.h>
 
 unsigned long current_frame=0;
+unsigned long int icy_buf_read;    /* bytes read while looking for tag */
+int icy_tag_crossed_boundary;      /* did meta tag cross packet? */
+static char tag_buf[255 * 16];     /* max size of icecast tags */
+
+#ifndef min
+#define min(a,b) (((a)<(b))?(a):(b))
+#endif
 
 enum mad_flow read_from_mmap(void *data, struct mad_stream *stream)
 {
@@ -82,11 +89,65 @@ enum mad_flow read_from_mmap(void *data, struct mad_stream *stream)
     return MAD_FLOW_CONTINUE;
 }
 
+static void print_icecast_stream_title (void)
+{
+    char *stream_title, *end_quote, *artist, *title;
+    //char emptystring[31], artist_string[31], title_string[31];
+
+    tag_buf[sizeof(tag_buf)-1] = '\0';
+    //memset (emptystring, ' ', 30);
+    //emptystring[30] = artist_string[30] = title_string[30] = '\0';
+
+    if (stream_title = strstr(tag_buf, "StreamTitle='"))
+    {
+        stream_title += strlen("StreamTitle='");
+        if (end_quote = strstr(stream_title, "';"))
+        {
+            *end_quote = '\0';
+            #if 0
+            printf("@I %s\n", stream_title); /* for debugging */
+            #endif
+            /* try to find "artist - title" */
+            if (title = strchr(artist = stream_title, '-'))
+            {
+                char *tail = title - 1;
+
+                *title++= '\0';
+                while (*title == ' ') title++;
+                while ((tail > artist) && (*tail == ' ')) *tail-- = '\0';
+            }
+            /* try to find "(artist) title" */
+            else if ( (artist = strchr(stream_title, '(')) <
+                 (title = strchr(stream_title, ')')) )
+            {
+                artist++;
+                *title++ = '\0';
+                while (*title == ' ') title++;
+            }
+            /* punt */
+            else
+            {
+                title = stream_title;
+                artist = "";
+            }
+            printf("@I Artist:%s\n", artist);
+            printf("@I Title:%s\n", title);
+        }
+    }
+}
+
 /* assumes that playbuf->buf has been preallocated to BUF_SIZE */
 enum mad_flow read_from_fd(void *data, struct mad_stream *stream)
 {
     buffer *playbuf = data;
     int bytes_to_preserve = stream->bufend - stream->next_frame;
+    int readbytes;
+    
+    static int tag_remain;
+    static int tag_consumed;
+    int meta_consumed;
+    int bytes_after_tag, i;
+    char *meta_start, *tag_start, *buf_end;
     
     if(playbuf->done)
     {
@@ -110,10 +171,88 @@ enum mad_flow read_from_fd(void *data, struct mad_stream *stream)
     if (bytes_to_preserve)
         memmove(playbuf->buf, stream->next_frame, bytes_to_preserve);
 
-    if( !(read(playbuf->fd, playbuf->buf + bytes_to_preserve, BUF_SIZE - bytes_to_preserve) > 0) )
-        playbuf->done = 1;
+	if (icy_metaint)
+    {
+        readbytes = read(playbuf->fd, playbuf->buf + bytes_to_preserve,
+                     min((icy_metaint),BUF_SIZE) - bytes_to_preserve);
+        icy_buf_read += readbytes;
+    } else {
+        readbytes = read(playbuf->fd, playbuf->buf + bytes_to_preserve,
+                     BUF_SIZE - bytes_to_preserve);
+    }
 
-    mad_stream_buffer(stream, playbuf->buf, playbuf->length);
+    if (readbytes <= 0)
+    {
+        playbuf->done = 1;
+        return MAD_FLOW_CONTINUE;
+    }
+
+    if (icy_metaint)
+	{
+		buf_end = playbuf->buf + bytes_to_preserve + readbytes;
+		meta_consumed = 0;
+
+		if (icy_buf_read > icy_metaint)
+		{
+			meta_start = buf_end - (icy_buf_read - icy_metaint);
+			tag_remain = ((unsigned char) *meta_start) * 16;
+			tag_consumed = 0;
+			tag_start = meta_start + 1;
+			meta_consumed = 1; /* consume size byte */
+
+			if (tag_remain > 0)
+			{
+				if (tag_start < buf_end)
+				{
+					/* get as much tag data as we can */
+					tag_consumed = min(tag_remain, buf_end - tag_start);
+					tag_remain -= tag_consumed;
+					meta_consumed += tag_consumed;
+					memmove(tag_buf, tag_start, tag_consumed);
+
+					if (tag_remain)
+					{
+						icy_tag_crossed_boundary=1;
+					}
+					else if (options.opt & MPG321_REMOTE_PLAY)
+					{
+						print_icecast_stream_title();
+					}
+				}
+				else
+				{
+					icy_tag_crossed_boundary=1;
+				}
+			}
+		}
+		else if (icy_tag_crossed_boundary)
+		{
+			meta_start = tag_start = playbuf->buf + bytes_to_preserve;
+			i = tag_consumed;
+			tag_consumed = min(tag_remain, buf_end - tag_start);
+			meta_consumed = tag_consumed;
+			memmove(tag_buf+i, tag_start, tag_consumed); /* copy tag */
+			tag_remain -= tag_consumed;
+			if (tag_remain == 0)
+			{
+				if (options.opt & MPG321_REMOTE_PLAY)
+				{
+					print_icecast_stream_title();
+				}
+				icy_tag_crossed_boundary = 0;
+			}
+		}
+
+		if (meta_consumed)
+		{
+			readbytes -= meta_consumed;
+			bytes_after_tag = buf_end - (meta_start + meta_consumed);
+			icy_buf_read = bytes_after_tag;
+			memmove(meta_start, meta_start+meta_consumed, bytes_after_tag);
+		}
+	}
+
+	mad_stream_buffer(stream, playbuf->buf, readbytes+bytes_to_preserve);
     
     return MAD_FLOW_CONTINUE;
 }    

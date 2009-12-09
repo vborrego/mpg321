@@ -1,3 +1,5 @@
 syntax:glob
 *.o
+*~
 build/*
+autom4te.cache/*
