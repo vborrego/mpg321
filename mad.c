@@ -92,11 +92,8 @@ enum mad_flow read_from_mmap(void *data, struct mad_stream *stream)
 static void print_icecast_stream_title (void)
 {
     char *stream_title, *end_quote, *artist, *title;
-    //char emptystring[31], artist_string[31], title_string[31];
 
     tag_buf[sizeof(tag_buf)-1] = '\0';
-    //memset (emptystring, ' ', 30);
-    //emptystring[30] = artist_string[30] = title_string[30] = '\0';
 
     if (stream_title = strstr(tag_buf, "StreamTitle='"))
     {

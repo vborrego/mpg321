@@ -1,15 +1,15 @@
 /*
     mpg321 - a fully free clone of mpg123.
     Copyright (C) 2001 Joe Drew
-    
+
     Originally based heavily upon:
     plaympeg - Sample MPEG player using the SMPEG library
     Copyright (C) 1999 Loki Entertainment Software
-    
+
     Also uses some code from
     mad - MPEG audio decoder
     Copyright (C) 2000-2001 Robert Leslie
-    
+
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
@@ -66,7 +66,7 @@ enum mad_flow remote_parse_input(buffer *buf, playlist *pl)
     }
 
     remote_input_buf[numread+alreadyread] = '\0';
-    
+
     if ((arg = strchr(remote_input_buf, '\n')))
     {
         *(arg) = '\0';
@@ -123,32 +123,32 @@ enum mad_flow remote_parse_input(buffer *buf, playlist *pl)
             if (arg[0] == '-' || arg[0] == '+')
             {
                 signed long toMove = atol(arg);
-            
+
                 /* on forward seeks we don't need to stop decoding */
                 enum mad_flow toDo = move(buf, toMove);
-                
-                if (arg) 
+
+                if (arg)
                     free(arg);
 
                 return toDo;
             }
-            
+
             /* absolute seek */
             else
             {
                 long toSeek = atol(arg);
-                
+
                 seek(buf, toSeek);
                 goto stop;
             }
         }
-        
+
         else
         {
             /* mpg123 does no error checking, so we should emulate them */
-        }                        
+        }
     }
-    
+
     else if (strcasecmp(input, "S") == 0 || strcasecmp(input, "STOP") == 0)
     {
         if (status != MPG321_STOPPED)
@@ -159,16 +159,16 @@ enum mad_flow remote_parse_input(buffer *buf, playlist *pl)
             pause_play(NULL, NULL); /* reset pause data */
             printf("@P 0\n");
         }
-        
+
         goto stop;
     }
-    
+
     else if (strcasecmp(input, "Q") == 0 || strcasecmp(input, "QUIT") == 0)
     {
         quit_now = 1;
         goto stop;
     }
-    
+
     else if (strcasecmp(input, "P") == 0 || strcasecmp(input, "PAUSE") == 0)
     {
         if (status == MPG321_PLAYING || status == MPG321_PAUSED)
@@ -179,20 +179,32 @@ enum mad_flow remote_parse_input(buffer *buf, playlist *pl)
         goto stop;
     }
 
-    else 
+    else if (strcasecmp(input, "G") == 0 || strcasecmp(input, "GAIN") == 0)
+    {
+       if (arg)
+       {
+           options.volume = mad_f_tofixed(atoi(arg)/100.0);
+           free(arg);
+       }
+       printf("@G %d\n", (int)((double)options.volume / (1 << MAD_F_FRACBITS) * 100.0));
+
+       return MAD_FLOW_CONTINUE;
+    }
+
+    else
     {
         fprintf(stderr, "@E Unknown command '%s'\n", input);
 
     }
 
-    if (arg) 
+    if (arg)
         free(arg);
     return 0;
 
 stop:
     if (arg)
         free(arg);
-    return MAD_FLOW_STOP;    
+    return MAD_FLOW_STOP;
 }
 
 void remote_get_input_wait(buffer *buf)
@@ -200,7 +212,7 @@ void remote_get_input_wait(buffer *buf)
     fd_set fd;
     FD_ZERO(&fd);
     FD_SET(0,&fd);
-    
+
     if (!strlen (remote_input_buf))
     {
       select(1, &fd, NULL, NULL, NULL);
@@ -223,9 +235,9 @@ enum mad_flow remote_get_input_nowait(buffer *buf)
 
         else
             return 0;
-    } 
-     
-    else 
+    }
+
+    else
     {
         return remote_parse_input(buf, buf->pl);
     }
