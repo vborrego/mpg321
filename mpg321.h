@@ -143,11 +143,28 @@ enum
     MPG321_USE_USERDEF   = 0x00004000,
     MPG321_USE_ALSA09    = 0x00008000,
     
-    MPG321_FORCE_STEREO  = 0x00010000
+    MPG321_FORCE_STEREO  = 0x00010000,
+    MPG321_PRINT_FFT     = 0x00020000
 };
+
+#define FFT_BUFFER_SIZE_LOG 9
+#define FFT_BUFFER_SIZE (1 << FFT_BUFFER_SIZE_LOG) /* 512 */
+
+/* sound sample - should be an signed 16 bit value */
+typedef short int sound_sample;
+
+typedef struct {
+    /* Temporary data stores to perform FFT in. */
+    double real[FFT_BUFFER_SIZE];
+    double imag[FFT_BUFFER_SIZE];
+} fft_state;
 
 #define DEFAULT_PLAYLIST_SIZE 1024
 #define BUF_SIZE 1048576 /* Size for read buffer for audio data */
+
+/* fft functions */
+void fft_perform(const sound_sample *input, double *output, fft_state *state);
+fft_state *fft_init(void);
 
 /* playlist functions */
 playlist * new_playlist();

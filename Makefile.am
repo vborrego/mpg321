@@ -11,7 +11,8 @@ mpg321_SOURCES = \
 	getopt.h \
 	remote.c \
 	ao.c \
-	options.c
+	options.c \
+	fft.c
 
 SUBDIRS = m4
 EXTRA_DIST = README.remote HACKING BUGS mpg321.sgml mpg321.1 $(srcdir)/debian/*
@@ -20,14 +21,14 @@ man_MANS = mpg321.1
 
 install-exec-hook:
 if DO_SYMLINK
-	-cd $(DESTDIR)/$(bindir) && $(LN_S) mpg321 mpg123 
+	-cd $(DESTDIR)/$(bindir) && $(LN_S) mpg321 mpg123
 endif
 
 uninstall-hook:
 if DO_SYMLINK
 	if [ -L $(DESTDIR)/$(bindir)/mpg123 ]; then \
 		echo "The $(DESTDIR)/$(bindir)/mpg123 symlink still exists. You may want to remove it."\
-	fi	
+	fi
 endif
 
 dist-hook:

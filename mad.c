@@ -858,6 +858,76 @@ signed long audio_linear_dither(unsigned int bits, mad_fixed_t sample,
   return output >> scalebits;
 }
 
+
+static void perform_and_print(char* samples, fft_state *state)
+{
+    static int xranges[] = {0, 1, 2, 3, 5, 7, 10, 14, 20, 28, 40, 54, 74, 101, 137, 187, 255};
+    static double fftout[FFT_BUFFER_SIZE / 2 + 1];
+
+    printf("@I Peak:");
+    fft_perform((sound_sample*)samples, fftout, state);
+
+    int i;
+    for (i = 0; i < 256; i++)
+    {
+        fftout[i] = (int)(sqrt(fftout[i + 1])) >> 8;
+    }
+
+    for (i=0; i < 16; i++)
+    {
+        int val = 0;
+        int j;
+        for (j = xranges[i]; j < xranges[i + 1]; j++)
+        {
+            val += (fftout[j]) / 128;
+        }
+        if(val > 127) val = 127;
+        printf("%03i ", val);
+    }
+    printf("\n");
+}
+
+
+static int process_fft(char* data, int size)
+{
+    static fft_state *left_fftstate;
+    static int init = 0;
+    static char buff_samples[1024];
+    static int buff_sample_count;
+
+    if(!(options.opt & MPG321_PRINT_FFT)) return 0;
+
+    if(!init)
+    {
+        buff_sample_count = 0;
+        left_fftstate = fft_init();
+        init = 1;
+    }
+
+    // Size is at least 2304 bytes, so we can eat 1024 of those.
+    if (buff_sample_count && 0)
+    {
+        memcpy(&buff_samples[buff_sample_count], data, 1024 - buff_sample_count);
+        data = &data[buff_sample_count];
+        size = size - buff_sample_count;
+        perform_and_print(buff_samples, left_fftstate);
+        buff_sample_count = 0;
+    }
+
+    int samples;
+    for(samples = 0; (samples + 1030) < size; samples += 1024)
+    {
+        perform_and_print(&data[samples], left_fftstate);
+    }
+
+    if (samples < size && 0)
+    {
+        memcpy(buff_samples, &data[samples], size - samples);
+        buff_sample_count = size - samples;
+    }
+}
+
+
 enum mad_flow output(void *data,
                      struct mad_header const *header,
                      struct mad_pcm *pcm)
@@ -926,6 +996,7 @@ enum mad_flow output(void *data,
 #endif
         }
 
+        process_fft(stream, pcm->length * 4);
         ao_play(playdevice, stream, pcm->length * 4);
     }
 
@@ -951,7 +1022,7 @@ enum mad_flow output(void *data,
             *ptr++ = (unsigned char) (sample >> 0);
 #endif
         }
-
+        process_fft(stream, pcm->length * 4);
         ao_play(playdevice, stream, pcm->length * 4);
     }
 
@@ -972,6 +1043,7 @@ enum mad_flow output(void *data,
             *ptr++ = (unsigned char) (sample >> 0);
 #endif
         }
+        process_fft(stream, pcm->length * 2);
         ao_play(playdevice, stream, pcm->length * 2);
     }
 

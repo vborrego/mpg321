@@ -1,15 +1,15 @@
 /*
     mpg321 - a fully free clone of mpg123.
     options.c: Copyright (C) 2001, 2002 Joe Drew
-    
+
     Originally based heavily upon:
     plaympeg - Sample MPEG player using the SMPEG library
     Copyright (C) 1999 Loki Entertainment Software
-    
+
     Also uses some code from
     mad - MPEG audio decoder
     Copyright (C) 2000-2001 Robert Leslie
-    
+
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
@@ -41,7 +41,7 @@ void parse_options(int argc, char *argv[], playlist *pl)
     struct option long_options[] =
     {
         /* NO-OPS. Implement these if you need them, please. */
-    
+
         /* these take no parameter and have no short equiv */
         { "headphones", 0, 0, 'O' }, /* or -o h */
         { "speaker", 0, 0, 'P' }, /* or -o s */
@@ -50,7 +50,7 @@ void parse_options(int argc, char *argv[], playlist *pl)
         { "equalizer", 0, 0, 'E' },
         { "aggressive", 0, 0, 'I' },
         { "8bit", 0, 0, '8' },
-    
+
         /* these take no parameter and have short equiv */
         { "2to1", 0, 0, '2' },
         { "4to1", 0, 0, '4' },
@@ -64,7 +64,7 @@ void parse_options(int argc, char *argv[], playlist *pl)
         { "mix", 0, 0, 'm' },
         { "control", 0, 0, 'C' },
         { "auth", 0, 0, 'u' },
-    
+
         /* these take a parameter and have short equiv */
         { "doublespeed", 1, 0, 'd' },
         { "halfspeed", 1, 0, 'h' },
@@ -72,16 +72,16 @@ void parse_options(int argc, char *argv[], playlist *pl)
         { "buffer", 1, 0, 'b' },
         { "proxy", 1, 0, 'p' },
         { "rate", 1, 0, 'r' },
-            
+
         /* The following are all implemented. */
 
         /* These take a parameter and have no short equiv */
         { "au", 1, 0, 'A' },
         { "cdr", 1, 0, 'D' },
-    
+
         /* Takes no parameters */
         { "verbose", 0, 0, 'v' },
-        { "quiet", 0, 0, 'q' }, 
+        { "quiet", 0, 0, 'q' },
         { "test", 0, 0, 't' },
         { "stdout", 0, 0, 's' },
         { "STDOUT", 0, 0, 's' },
@@ -92,7 +92,8 @@ void parse_options(int argc, char *argv[], playlist *pl)
         { "random", 0, 0, 'Z' },
         { "remote", 0, 0, 'R' },
         { "stereo", 0, 0, 'T' },
-            
+        { "fft", 0, 0, 'F'},
+
         /* takes parameters */
         { "frames", 1, 0, 'n' },
         { "skip-printing-frames", 1, 0, 'G' },
@@ -108,11 +109,11 @@ void parse_options(int argc, char *argv[], playlist *pl)
 
     options.maxframes=-1;
 
-    while ((c = getopt_long(argc, argv, 
+    while ((c = getopt_long(argc, argv,
                                 "OPLTNEI824cy01mCu:d:h:f:b:p:r:G:" /* unimplemented */
-                                "A:D:vqtsVHzZRo:n:@:k:w:a:g:",     /* implemented */
+                                "A:D:vqtsVFHzZRo:n:@:k:w:a:g:",    /* implemented */
                         long_options, &option_index)) != -1)
-    {            
+    {
         switch(c)
         {
             case 'O': case 'P': case 'L': case 'N': case 'E': case '8':
@@ -120,7 +121,7 @@ void parse_options(int argc, char *argv[], playlist *pl)
             case 'u':
             case 'U': case 'd': case 'h': case 'f': case 'b': case 'p':
                 break;
-            case 'n': 
+            case 'n':
                 options.maxframes = atol(optarg);
                 break;
             case 'r':
@@ -129,12 +130,12 @@ void parse_options(int argc, char *argv[], playlist *pl)
             case 'z':
                 shuffle_play = 1;
                 break;
-                
+
             case 'Z':
                 set_random_play(pl);
                 break;
-                
-            case '@': 
+
+            case '@':
                 playlist_file = strdup(optarg);
                 break;
 
@@ -142,17 +143,21 @@ void parse_options(int argc, char *argv[], playlist *pl)
                 options.opt |= MPG321_VERBOSE_PLAY;
                 setvbuf(stdout, NULL, _IONBF, 0);
                 break;
-            
+
+            case 'F':
+                options.opt |= MPG321_PRINT_FFT;
+                break;
+
             case 'q':
                 options.opt |= MPG321_QUIET_PLAY;
                 break;
-            
+
             case 'R':
                 options.opt |= MPG321_REMOTE_PLAY;
                 options.opt |= MPG321_QUIET_PLAY; /* surpress other output */
                 setvbuf(stdout, NULL, _IONBF, 0);
                 break;
-                
+
             case 'k':
                 options.seek = atol(optarg);
                 status = MPG321_SEEKING;
@@ -162,57 +167,57 @@ void parse_options(int argc, char *argv[], playlist *pl)
                     exit(1);
                 }
                 break;
-            
+
             case 't':
                 options.opt = MPG321_USE_NULL;
                 break;
-            
+
             case 'w':
                 options.opt |= MPG321_USE_WAV;
                 options.device = strdup(optarg);
                 break;
-            
+
             case 'A':
                 options.opt |= MPG321_USE_AU;
                 options.device = strdup(optarg);
                 break;
-            
+
             case 'D':
                 options.opt |= MPG321_USE_CDR;
                 options.device = strdup(optarg);
                 break;
-            
+
             case 'a':
                 /* use this device or file or whatever for output, with the
                    default output device, or whatever device is specified with -o */
                 options.device = strdup(optarg);
                 break;
-            
+
             case 's':
                 options.opt |= MPG321_USE_STDOUT;
                 break;
-                
+
             case 'o':
                 if (strcmp(optarg, "alsa") == 0)
                 {
                     options.opt |= MPG321_USE_ALSA;
                 }
-                
+
                 else if (strcmp(optarg, "alsa09") == 0)
                 {
                     options.opt |= MPG321_USE_ALSA09;
                 }
-                
+
                 else if (strcmp(optarg, "esd") == 0)
                 {
                     options.opt |= MPG321_USE_ESD;
                 }
-                
+
                 else if (strcmp(optarg, "arts") == 0)
                 {
                     options.opt |= MPG321_USE_ARTS;
                 }
-                
+
                 else if (strcmp(optarg, "oss") == 0)
                 {
                     options.opt |= MPG321_USE_OSS;
@@ -223,20 +228,20 @@ void parse_options(int argc, char *argv[], playlist *pl)
                     options.opt |= MPG321_USE_SUN;
                 }
 
-                else if (strcmp(optarg, "h") == 0 || strcmp(optarg, "s") == 0 
+                else if (strcmp(optarg, "h") == 0 || strcmp(optarg, "s") == 0
                             || strcmp(optarg, "l") == 0)
                 {
                     /* for now, we don't support these */
                 }
-                
+
                 else /* Just pass on what the user gave to libao */
                 {
                     options.opt |= MPG321_USE_USERDEF;
                     options.devicetype = strdup(optarg);
                 }
-                
-                break;    
-            
+
+                break;
+
             case 'g':
                 options.volume = atoi(optarg);
                 options.volume = (options.volume/100.0) * MAD_F_ONE;
@@ -263,11 +268,11 @@ void parse_options(int argc, char *argv[], playlist *pl)
                        "the Free Software Foundation; either version 2 of the License, or\n"
                        "(at your option) any later version.\n" );
                 exit(0);
-            
+
             case 'H':
                 usage(argv[0]);
                 exit(0);
-            
+
             case ':':
                 fprintf(stderr, "Missing argument to %s\n", argv[optind]);
                 break;
