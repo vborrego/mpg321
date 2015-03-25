@@ -98,6 +98,7 @@ void usage(char *argv0)
         "   --list N or -@ N         Use playlist N as list of MP3 files\n"
         "   --random or -Z           Play files randomly until interrupted\n"
         "   --shuffle or -z          Shuffle list of files before playing\n"
+        "   --repeat or -e           Repeat playlist\n"
         "   --fft                    Turn on FFT analysis of PCM data\n"
         "   -R                       Use remote control interface\n"
         "   --aggressive             Try to get higher priority\n"
