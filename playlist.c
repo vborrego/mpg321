@@ -85,6 +85,10 @@ void set_random_play(playlist *pl)
     pl->random_play = 1;
 }
 
+void set_repeat_play(playlist *pl){
+    pl->repeat = 1;
+}
+
 void shuffle_files (playlist *pl)
 {
     int i;
@@ -135,15 +139,18 @@ char * get_next_file(playlist *pl, buffer *buf)
         return pl->remote_file;
     }    
     
-    if (!pl->random_play)
+    if (!pl->random_play) // normal play
     {
-        if (i == pl->numfiles)
+        if (i == pl->numfiles && pl->repeat==0)
             return NULL;
+        /*repeat list*/
+        if (i == pl->numfiles && pl->repeat==1){
+            i=0;
+        }
         
         return pl->files[i++];
-    }
-    
-    else
+    }    
+    else // random play
     {
         if (!pl->numfiles)
             return NULL;

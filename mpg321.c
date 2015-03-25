@@ -216,6 +216,18 @@ static int show_id3(struct id3_tag const *tag)
 
     return 1;
 }
+/*
+ Shows loaded playlist
+ */
+void show_playlist(playlist* plist){
+    //printf("Number of files in playlist: %d \n" , pl->numfiles );
+    printf("## Playlist ## \n"  );    
+    int idx=0;
+    for(idx=0;idx<plist->numfiles;idx++){
+        printf("\tFile: %s \n" , plist->files[idx] );    
+    }
+    printf("\n\n\n"  );       
+}
 
 int main(int argc, char *argv[])
 {
@@ -255,7 +267,7 @@ int main(int argc, char *argv[])
 
     if (playlist_file)
         load_playlist(pl, playlist_file);
-    
+        
     add_cmdline_files(pl, argv);
 
     if (shuffle_play)
@@ -279,6 +291,8 @@ int main(int argc, char *argv[])
     {
         printf ("@R MPG123\n");
     }
+
+    show_playlist(pl);
     
     /* Play the mpeg files or zip it! */
     while((currentfile = get_next_file(pl, &playbuf)))

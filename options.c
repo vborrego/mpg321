@@ -93,6 +93,7 @@ void parse_options(int argc, char *argv[], playlist *pl)
         { "remote", 0, 0, 'R' },
         { "stereo", 0, 0, 'T' },
         { "fft", 0, 0, 'F'},
+        { "repeat", 0, 0, 'e'},
 
         /* takes parameters */
         { "frames", 1, 0, 'n' },
@@ -134,7 +135,11 @@ void parse_options(int argc, char *argv[], playlist *pl)
             case 'Z':
                 set_random_play(pl);
                 break;
-
+                
+            case 'e':
+                set_repeat_play(pl);
+                break;
+                
             case '@':
                 playlist_file = strdup(optarg);
                 break;

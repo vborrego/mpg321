@@ -49,6 +49,7 @@ typedef struct pl
     int files_size;
     int random_play;
     char remote_file[PATH_MAX];
+    int repeat;
 } playlist;
 
 /* Private buffer for passing around with libmad */
@@ -174,6 +175,7 @@ void add_cmdline_files(playlist *pl, char *argv[]);
 void add_file(playlist *pl, char *file);
 void load_playlist(playlist *pl, char *filename);
 void set_random_play(playlist *pl);
+void set_repeat_play(playlist *pl);
 void play_remote_file(playlist *pl, char *filename);
 void clear_remote_file(playlist *pl);
 void shuffle_files(playlist *pl);
